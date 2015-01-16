@@ -1,0 +1,24 @@
+import(lattice)
+
+importFrom(rjags, "jags.model", "adapt", "coda.samples", "list.modules",
+           "load.module","unload.module")
+importFrom(methods, "setGeneric", "setMethod", "setClass")
+importFrom(coda, "gelman.diag", "as.mcmc.list", "thin", "mcmc", "as.mcmc")
+importFrom(parallel, "detectCores", "makeCluster", "clusterExport", 
+           "clusterSetRNGStream", "clusterApply")
+
+exportClasses("jagsUI","jagsUIbasic")
+
+exportMethods("traceplot")
+
+export("jags", "jagsUI","jags.basic","autojags","pp.check", "traceplot", 
+       "whiskerplot")
+
+S3method("plot", "jagsUI")
+S3method("xyplot", "jagsUI")
+S3method("densityplot", "jagsUI")
+S3method("print","jagsUI")
+S3method("update","jagsUI")
+S3method("update","jagsUIbasic")
+S3method("summary","jagsUI")
+
