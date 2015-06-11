@@ -1,7 +1,7 @@
 
-process.output <- function(x,DIC,params.omit) {
+process.output <- function(x,DIC,params.omit,verbose=TRUE) {
 
-cat('Calculating statistics.......','\n')  
+if(verbose){cat('Calculating statistics.......','\n')}  
   
 #Get parameter names
 params <- colnames(x[[1]])
@@ -24,7 +24,7 @@ params.simple <- unique(sapply(strsplit(params, "\\["), "[", 1))
 #Functions for statistics
 qs <- function(x,y){as.numeric(quantile(x,y))}
 #Overlap 0 function
-ov <- function(x){findInterval(0,c(qs(x,0.025),qs(x,0.975)))==1}
+ov <- function(x){findInterval(0,sort(c(qs(x,0.025),qs(x,0.975))))==1}
 #f function (proportion of posterior with same sign as mean)
 gf <- function(x){if(mean(x)>=0){mean(x>=0)}else{mean(x<0)}}
 #n.eff function
@@ -51,9 +51,6 @@ gd <- function(i,hold){
   r <- try(gelman.diag(hold[,i], autoburnin=FALSE)$psrf[1], silent=TRUE)
   if(inherits(r, "try-error") || !is.finite(r)) {
     r <- NA
-    options(warn=1)
-    warning('At least one Rhat value could not be calculated.')
-    options(warn=0,error=NULL)   
   }
   return(r)
 }
@@ -127,6 +124,13 @@ calc.stats <- function(i){
 #Actually run function(nullout not used for anything)
 nullout <- sapply(params.simple,calc.stats)
 
+#Warn user if at least one Rhat value was NA
+if(NA%in%unlist(rhat)&&verbose){
+  options(warn=1)
+  warning('At least one Rhat value could not be calculated.')
+  options(warn=0,error=NULL)
+}
+
 #Do DIC/pD calculations if requested by user
 if(DIC){
   dev <- matrix(data=mat[,'deviance'],ncol=m,nrow=n)   
@@ -140,12 +144,12 @@ if(DIC){
   dic <- mean(dic)
   
   #Return this list if DIC/pD requested
-  cat('\nDone.','\n')
+  if(verbose){cat('\nDone.','\n')}
   return(list(sims.list=sims.list,mean=means,sd=se,q2.5=q2.5,q25=q25,q50=q50,q75=q75,q97.5=q97.5,overlap0=overlap0,
               f=f,Rhat=rhat,n.eff=n.eff,pD=pd,DIC=dic))
 } else {
   #Otherwise return list without pD/DIC
-  cat('\nDone.','\n')
+  if(verbose){cat('\nDone.','\n')}
   return(list(sims.list=sims.list,mean=means,sd=se,q2.5=q2.5,q25=q25,q50=q50,q75=q75,q97.5=q97.5,overlap0=overlap0,
               f=f,Rhat=rhat,n.eff=n.eff))
 }
