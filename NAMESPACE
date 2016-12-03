@@ -5,18 +5,14 @@ importFrom(rjags, "jags.model", "adapt", "coda.samples", "list.modules",
 importFrom(methods, "setGeneric", "setMethod", "setClass")
 importFrom(coda, "gelman.diag", "as.mcmc.list", "thin", "mcmc", "as.mcmc")
 importFrom(parallel, "detectCores", "makeCluster", "clusterExport", 
-           "clusterSetRNGStream", "clusterApply", "stopCluster")
+           "clusterSetRNGStream", "clusterApply", "stopCluster", "clusterEvalQ")
 importFrom(stats, "runif", "time", "start", "end", "quantile", "var", "sd")
 importFrom(grDevices, "devAskNewPage", "rainbow")
 importFrom(graphics, "plot", "abline", "axis", "box", "segments", "lines", "par")
 importFrom(utils, "capture.output")
 
-exportClasses("jagsUI","jagsUIbasic")
-
-exportMethods("traceplot")
-
 export("jags", "jagsUI","jags.basic","autojags","pp.check", "traceplot", 
-       "whiskerplot")
+       "whiskerplot", "View")
 
 S3method("plot", "jagsUI")
 S3method("xyplot", "jagsUI")
@@ -25,4 +21,8 @@ S3method("print","jagsUI")
 S3method("update","jagsUI")
 S3method("update","jagsUIbasic")
 S3method("summary","jagsUI")
+S3method("traceplot", "jagsUI")
+S3method("traceplot", "default")
+S3method("View", "jagsUI")
+S3method("View","default")
 
