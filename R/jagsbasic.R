@@ -1,13 +1,10 @@
 
-jags.basic <- function(data,inits=NULL,parameters.to.save,model.file,n.chains,n.adapt=100,n.iter,n.burnin=0,n.thin=1,
-                           modules=c('glm'),parallel=FALSE,n.cores=NULL,DIC=TRUE,seed=as.integer(Sys.time()),save.model=FALSE,verbose=TRUE){
-  
-  #Set random seed
-  RNGkind('default')
-  set.seed(seed)
+jags.basic <- function(data,inits=NULL,parameters.to.save,model.file,n.chains,n.adapt=NULL,n.iter,n.burnin=0,n.thin=1,
+                           modules=c('glm'),factories=NULL,parallel=FALSE,n.cores=NULL,DIC=TRUE,seed=NULL,save.model=FALSE,verbose=TRUE){
   
   #Pass input data and parameter list through error check / processing
-  data.check <- process.input(data,parameters.to.save,inits,n.chains,n.iter,n.burnin,n.thin,n.cores,DIC=DIC,verbose=verbose,parallel=parallel)
+  data.check <- process.input(data,parameters.to.save,inits,n.chains,n.iter,n.burnin,n.thin,n.cores,DIC=DIC,
+                              verbose=verbose,parallel=parallel,seed=seed)
   data <- data.check$data
   parameters.to.save <- data.check$params
   inits <- data.check$inits
@@ -20,9 +17,12 @@ jags.basic <- function(data,inits=NULL,parameters.to.save,model.file,n.chains,n.
   if(parallel && n.chains>1){
     
     par <- run.parallel(data,inits,parameters.to.save,model.file,n.chains,n.adapt,n.iter,n.burnin,n.thin,
-                        modules,seed,DIC,verbose=verbose,n.cores=n.cores) 
+                        modules,factories,seed,DIC,verbose=verbose,n.cores=n.cores) 
     samples <- par$samples
     m <- par$model
+    total.adapt <- par$total.adapt
+    sufficient.adapt <- par$sufficient.adapt
+    if(any(!sufficient.adapt)&verbose){warning("JAGS reports adaptation was incomplete. Consider increasing n.adapt")}
     
   } else {
     
@@ -32,11 +32,14 @@ jags.basic <- function(data,inits=NULL,parameters.to.save,model.file,n.chains,n.
     
     #Set modules
     set.modules(modules,DIC)
+    set.factories(factories)
     
     rjags.output <- run.model(model.file,data,inits,parameters.to.save,n.chains,n.iter,n.burnin,n.thin,n.adapt,
                               verbose=verbose)
     samples <- rjags.output$samples
     m <- rjags.output$m
+    total.adapt <- rjags.output$total.adapt
+    sufficient.adapt <- rjags.output$sufficient.adapt
     
     ##########################
     ##End of rjags functions##

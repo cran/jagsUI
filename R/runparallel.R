@@ -1,10 +1,7 @@
 
 run.parallel <- function(data=NULL,inits=NULL,parameters.to.save,model.file=NULL,n.chains,n.adapt,n.iter,n.burnin,n.thin,
-                         modules,seed,DIC,model.object=NULL,update=FALSE,verbose=TRUE,n.cores=NULL) {
+                         modules,factories,seed,DIC,model.object=NULL,update=FALSE,verbose=TRUE,n.cores=NULL) {
 
-#Set random seed
-set.seed(seed)
-  
 #Save current library paths
 current.libpaths <- .libPaths()
 
@@ -13,7 +10,6 @@ cl = makeCluster(n.cores)
 on.exit(stopCluster(cl))
 clusterExport(cl = cl, ls(), envir = environment())
 clusterEvalQ(cl,.libPaths(current.libpaths))
-clusterSetRNGStream(cl, seed)
 
 if(verbose){
 cat('Beginning parallel processing using',n.cores,'cores. Console output will be suppressed.\n')}
@@ -23,6 +19,7 @@ jags.clust <- function(i){
 
 #Load modules
 set.modules(modules,DIC)
+set.factories(factories)
 
 if(update){
   #Recompile model
@@ -44,7 +41,7 @@ if(update){
   
 }
 
-return(list(samp=rjags.output$samples[[1]],mod=rjags.output$m))
+return(list(samp=rjags.output$samples[[1]],mod=rjags.output$m,total.adapt=rjags.output$total.adapt,sufficient.adapt=rjags.output$sufficient.adapt))
 
 }
 
@@ -53,14 +50,19 @@ par <- clusterApply(cl=cl,x=1:n.chains,fun=jags.clust)
 
 #Create empty lists
 out <- samples <- model <- list()
+total.adapt <- sufficient.adapt <- vector(length=n.chains)
 
 #Save samples and model objects from each cluster
 for (i in 1:n.chains){
   samples[[i]] <- par[[i]][[1]]
   model[[i]] <- par[[i]][[2]]
+  total.adapt[i] <- par[[i]][[3]]
+  sufficient.adapt[i] <- par[[i]][[4]]
 }
 out$samples <- as.mcmc.list(samples)
 out$model <- model
+out$total.adapt <- total.adapt
+out$sufficient.adapt <- sufficient.adapt
 names(out$model) <- sapply(1:length(out$model),function(i){paste('cluster',i,sep="")})
 
 if(verbose){

@@ -1,14 +1,21 @@
 
-update.jagsUI <- function(object, parameters.to.save=NULL, n.adapt=0, n.iter, n.thin=NULL, modules=c('glm'), 
-                          seed=as.integer(Sys.time()),codaOnly=FALSE, verbose=TRUE, ...){
+update.jagsUI <- function(object, parameters.to.save=NULL, n.adapt=NULL, n.iter, n.thin=NULL, 
+                          modules=c('glm'), factories=NULL,
+                          DIC=NULL, seed=as.integer(Sys.time()),codaOnly=FALSE, verbose=TRUE, ...){
   
   mod <- object$model
-  DIC <- object$DIC
   
   #Get list of parameters to save
   if(is.null(parameters.to.save)){parameters <- object$parameters
   } else {parameters <- parameters.to.save}
-  if(object$DIC&&!'deviance'%in%parameters){parameters <- c(parameters,"deviance")}
+  
+  #Set up DIC monitoring
+  if(is.null(DIC)){
+    DIC <- object$DIC
+  }
+  
+  if(DIC&!'deviance'%in%parameters){parameters <- c(parameters,'deviance')
+    } else if(!DIC&'deviance'%in%parameters){parameters <- parameters[parameters!='deviance']}
   
   #Get thin rate
   if(is.null(n.thin)){n.thin <- object$mcmc.info$n.thin}
@@ -18,7 +25,7 @@ update.jagsUI <- function(object, parameters.to.save=NULL, n.adapt=0, n.iter, n.
   if(object$parallel){
     
     par <- run.parallel(data=NULL,inits=NULL,parameters.to.save=parameters,model.file=NULL,n.chains=object$mcmc.info$n.chains
-                 ,n.adapt=n.adapt,n.iter=n.iter,n.burnin=0,n.thin=n.thin,modules=modules,
+                 ,n.adapt=n.adapt,n.iter=n.iter,n.burnin=0,n.thin=n.thin,modules=modules,factories=factories,
                  seed=seed,DIC=DIC,model.object=mod,update=TRUE,verbose=verbose,n.cores=object$mcmc.info$n.cores) 
     samples <- par$samples
     m <- par$model
@@ -27,6 +34,7 @@ update.jagsUI <- function(object, parameters.to.save=NULL, n.adapt=0, n.iter, n.
     
     #Set modules
     set.modules(modules,DIC)
+    set.factories(factories)
     
     rjags.output <- run.model(model.file=NULL,data=NULL,inits=NULL,parameters.to.save=parameters,
                               n.chains=object$mcmc.info$n.chains,n.iter,n.burnin=0,n.thin,n.adapt,
@@ -44,7 +52,7 @@ update.jagsUI <- function(object, parameters.to.save=NULL, n.adapt=0, n.iter, n.
   samples <- order.params(samples,parameters,DIC,verbose=verbose)
     
   #Run process output
-  output <- process.output(samples,DIC=object$DIC,codaOnly,verbose=verbose)
+  output <- process.output(samples,DIC=DIC,codaOnly,verbose=verbose)
     
   #Summary
   output$summary <- summary.matrix(output,samples,object$mcmc.info$n.chains,codaOnly)
@@ -72,6 +80,7 @@ update.jagsUI <- function(object, parameters.to.save=NULL, n.adapt=0, n.iter, n.
   output$random.seed <- object$random.seed
   output$parallel <- object$parallel
   output$bugs.format <- object$bugs.format
+  output$DIC <- DIC
   
   #Keep a record of how many times model has been updated
   if(is.null(object$update.count)){output$update.count <- 1

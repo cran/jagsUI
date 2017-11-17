@@ -1,7 +1,6 @@
-setClass("jagsUIbasic")
 
-update.jagsUIbasic <- function(object, parameters.to.save=NULL, n.adapt=100, n.iter, n.thin=NULL, 
-                               modules=c('glm'), seed=as.integer(Sys.time()), verbose=TRUE, ...){
+update.jagsUIbasic <- function(object, parameters.to.save=NULL, n.adapt=NULL, n.iter, n.thin=NULL, 
+                               modules=c('glm'), factories=NULL, DIC=NULL, seed=as.integer(Sys.time()), verbose=TRUE, ...){
   
   mod <- object$model
   n.chains <- length(object$samples)
@@ -12,9 +11,15 @@ update.jagsUIbasic <- function(object, parameters.to.save=NULL, n.adapt=100, n.i
     parameters <- unique(sapply(strsplit(params.temp, "\\["), "[", 1))
   } else {parameters <- parameters.to.save}
   
-  if('deviance'%in%parameters){
-    DIC=TRUE
-  } else {DIC=FALSE}
+  #Set up DIC monitoring
+  if(is.null(DIC)){
+    if('deviance'%in%parameters){
+      DIC=TRUE
+    } else {DIC=FALSE}
+  } else{
+    if(DIC&!'deviance'%in%parameters){parameters <- c(parameters,'deviance')
+    } else if(!DIC&'deviance'%in%parameters){parameters <- parameters[parameters!='deviance']}
+  }
   
   if(is.null(n.thin)){n.thin <- thin(object$samples)}
   
@@ -23,7 +28,7 @@ update.jagsUIbasic <- function(object, parameters.to.save=NULL, n.adapt=100, n.i
   if(names(object$model[1])=='cluster1'){
     
     par <- run.parallel(data=NULL,inits=NULL,parameters.to.save=parameters,model.file=NULL,n.chains=n.chains
-                        ,n.adapt=n.adapt,n.iter=n.iter,n.burnin=0,n.thin=n.thin,modules=modules,
+                        ,n.adapt=n.adapt,n.iter=n.iter,n.burnin=0,n.thin=n.thin,modules=modules,factories=factories,
                         seed=seed,DIC=DIC,model.object=mod,update=TRUE,verbose=verbose,n.cores=n.cores) 
     samples <- par$samples
     m <- par$model
@@ -32,6 +37,7 @@ update.jagsUIbasic <- function(object, parameters.to.save=NULL, n.adapt=100, n.i
     
     #Set modules
     set.modules(modules,DIC)
+    set.factories(factories)
     
     rjags.output <- run.model(model.file=NULL,data=NULL,inits=NULL,parameters.to.save=parameters,
                               n.chains=object$mcmc.info$n.chains,n.iter,n.burnin=0,n.thin,n.adapt,
