@@ -1,10 +1,13 @@
 
 process.output <- function(x,DIC,params.omit,verbose=TRUE) {
 
+out <- tryCatch({
+
 if(verbose){cat('Calculating statistics.......','\n')}  
-  
-#Get parameter names
+
+# Get parameter names
 params <- colnames(x[[1]])
+
 #Get number of chains
 m <- length(x)
 
@@ -35,7 +38,9 @@ calcneff <- function(x,n,m){
   W <- mean(s2)
   
   #Non-degenerate case
-  if ((W > 1.e-8) && (m > 1)) {
+  if (is.na(W)){
+	  n.eff <- NA
+  } else if ((W > 1.e-8) && (m > 1)) {
     B <- n*var(xdot)
     sig2hat <- ((n-1)*W + B)/n      
     n.eff <- round(m*n*min(sig2hat/B,1),0)
@@ -70,13 +75,17 @@ calc.stats <- function(i){
   if(!is.na(dim[i][1])){
     
     #Get all samples
-    sims.list[[i]] <<- mat[,expand==i]
-    
+    sims.list[[i]] <<- mat[,expand==i,drop=FALSE]
+
+	#if every iteration is NA, don't do anything else
+	if(all(is.na(sims.list[[i]]))){return(NA)}
+
     #If more than 1 chain, calculate rhat 
     #Done separately for each element of non-scalar parameter to avoid errors
     if(m > 1 && (!i%in%params.omit)){
-      hold <- x[,expand==i]
-      rhat.vals <- sapply(1:dim(hold[[1]])[2],gd,hold=hold)
+      hold <- x[,expand==i,drop=FALSE]
+      nelements <- sum(expand==i)
+      rhat.vals <- sapply(1:nelements,gd,hold=hold)
       names(rhat.vals) <- colnames(hold[[1]])
       rhat[[i]] <<- populate(rhat.vals,dim[[i]])
     } else if (m == 1){
@@ -103,11 +112,13 @@ calc.stats <- function(i){
   
   #If parameter is a scalar
   } else {
-    
+
     if(m > 1 && (!i%in%params.omit)){rhat[[i]] <<- gelman.diag(x[,i],autoburnin=FALSE)$psrf[1]}
-    
+
     sims.list[[i]] <<- mat[,i]
-    
+
+	if(all(is.na(sims.list[[i]]))){return(NA)}
+
     means[[i]] <<- mean(sims.list[[i]])
     if(!i%in%params.omit){
     se[[i]] <<- sd(sims.list[[i]])
@@ -127,7 +138,8 @@ calc.stats <- function(i){
 nullout <- sapply(params.simple,calc.stats)
 
 #Warn user if at least one Rhat value was NA
-if(NA%in%unlist(rhat)&&verbose){
+rhat.sub <- unlist(rhat)[!is.na(unlist(means))]
+if(NA%in%rhat.sub&&verbose){
   options(warn=1)
   warning('At least one Rhat value could not be calculated.')
   options(warn=0,error=NULL)
@@ -144,7 +156,7 @@ if(DIC){
   }    
   pd <- mean(pd)
   dic <- mean(dic)
-  
+
   #Return this list if DIC/pD requested
   if(verbose){cat('\nDone.','\n')}
   return(list(sims.list=sims.list,mean=means,sd=se,q2.5=q2.5,q25=q25,q50=q50,q75=q75,q97.5=q97.5,overlap0=overlap0,
@@ -156,6 +168,14 @@ if(DIC){
               f=f,Rhat=rhat,n.eff=n.eff))
 }
 
+}, error = function(cond){
+  message('Calculating statistics failed with the following error:')
+  message(cond)
+  message('\nOutput falling back to class jagsUIbasic\n')
+  return(NULL)
+  }
+)
+return(out)
 }
 
 
