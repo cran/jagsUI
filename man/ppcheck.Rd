@@ -5,12 +5,16 @@
 \title{Posterior Predictive Checks for Bayesian Analyses fit in JAGS}
 
 \usage{
-  pp.check(x, actual, new)}
+  pp.check(x, observed, simulated, xlab=NULL, ylab=NULL, main=NULL, ...)}
 
 \arguments{
   \item{x}{A jagsUI object generated using the \code{jags} function}
-  \item{actual}{The name of the parameter (as a string, in the JAGS model) representing the fit of the actual dataset (e.g. residuals)}
-  \item{new}{The name of the corresponding parameter (as a string, in the JAGS model) representing the fit of the new 'ideal' dataset}
+  \item{observed}{The name of the parameter (as a string, in the JAGS model) representing the fit of the observed data (e.g. residuals)}
+  \item{simulated}{The name of the corresponding parameter (as a string, in the JAGS model) representing the fit of the new simulated data}
+  \item{xlab}{Customize x-axis label}
+  \item{ylab}{Customize y-axis label}
+  \item{main}{Customize plot title}
+  \item{\dots}{Additional arguments passed to \link{plot.default}}
 }
 
 \description{
@@ -33,7 +37,10 @@ employed <- longley$Employed
 n <- length(employed)
 data <- list(gnp=gnp,employed=employed,n=n)
 
-#Read in BUGS model file
+#Identify filepath of model file
+modfile <- tempfile()
+
+#Write model
 #Note calculation of discrepancy stats fit and fit.new
 #(sums of residuals)
 writeLines("
@@ -62,12 +69,8 @@ model{
   fit.new <- sum(res.new[])
 
 }
-", con="model.txt")
+", con=modfile)
 
-#Identify filepath of model file;
-#in this case in the working directory
-modfile <- 'model.txt'
-  
 #Set parameters to monitor
 params <- c('alpha','beta','sigma','fit','fit.new')
 
@@ -89,6 +92,6 @@ out
 
 #Posterior predictive check plot
 
-pp.check(out, actual = 'fit', new = 'fit.new')
+pp.check(out, observed = 'fit', simulated = 'fit.new')
 
 }
