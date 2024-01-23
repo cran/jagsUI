@@ -25,14 +25,21 @@ traceplot <- function(x, parameters=NULL, Rhat_min=NULL,
 param_trace <- function(x, parameter, m_labels=FALSE){
 
   #Get samples and Rhat values
-  vals <- mcmc_to_mat(x$samples, parameter)
+  vals <- mcmc_to_mat(x$samples[, parameter])
   Rhat <- sprintf("%.3f",round(x$summary[parameter, 'Rhat'],3))
 
   #Draw plot
   cols <- grDevices::rainbow(ncol(vals))
-  graphics::matplot(1:nrow(vals), vals, type='l', lty=1, col=cols,
+
+  if(all(is.na(vals))){
+    graphics::plot(1:nrow(vals), rep(0, nrow(vals)), type='n',
+              xlab="Iterations", ylab="Value",
+              main=bquote(.(parameter)*","~hat(R) == .(Rhat)))
+  } else {
+    graphics::matplot(1:nrow(vals), vals, type='l', lty=1, col=cols,
                  xlab='Iterations', ylab='Value',
                  main=bquote(.(parameter)*","~hat(R) == .(Rhat)))
+  }
 
   #Add margin labels if necessary
   if(m_labels){
@@ -40,6 +47,3 @@ param_trace <- function(x, parameter, m_labels=FALSE){
     graphics::mtext("Value", side=2, line=1.5, outer=TRUE)
   }
 }
-
-#General function for setting up plots
-# get_plot_info now has its own file
