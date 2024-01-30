@@ -1,4 +1,8 @@
-# jagsUI 1.6.0
+# jagsUI 1.6.2
+
+* Fix broken tests on CRAN
+
+# jagsUI 1.6.1
 
  * Extensive refactoring of internal code
  * Don't drop output dimensions when only one parameter saved

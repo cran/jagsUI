@@ -1,6 +1,6 @@
 Package: jagsUI
-Version: 1.6.1
-Date: 2024-01-23
+Version: 1.6.2
+Date: 2024-01-29
 Title: A Wrapper Around 'rjags' to Streamline 'JAGS' Analyses
 Authors@R: c(
     person("Ken", "Kellner", email="contact@kenkellner.com", role=c("cre","aut")),
@@ -17,9 +17,9 @@ URL: https://kenkellner.com/jagsUI/
 BugReports: https://github.com/kenkellner/jagsUI/issues
 NeedsCompilation: no
 VignetteBuilder: knitr
-Packaged: 2024-01-23 19:35:45 UTC; ken
+Packaged: 2024-01-29 13:21:59 UTC; ken
 Author: Ken Kellner [cre, aut],
   Mike Meredith [ctb]
 Maintainer: Ken Kellner <contact@kenkellner.com>
 Repository: CRAN
-Date/Publication: 2024-01-23 20:20:02 UTC
+Date/Publication: 2024-01-30 08:50:11 UTC
